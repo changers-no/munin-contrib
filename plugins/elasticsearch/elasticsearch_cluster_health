@@ -12,6 +12,7 @@
 use strict;
 use warnings;
 use LWP;
+use HTTP::Request::Common;
 use JSON qw/decode_json/;
 
 =head1 NAME
@@ -46,7 +47,11 @@ my $ua = LWP::UserAgent->new;
 $ua->timeout(10);
 
 sub autoconf {
-    my $res  = $ua->get( $url, 'Content-Type' => 'application/json' );
+    my $req = GET $url, Content_Type => 'application/json';
+    if (exists $ENV{'auth_basic_username'} && exists $ENV{'auth_basic_password'}) {
+        $req->authorization_basic($ENV{'auth_basic_username'}, $ENV{'auth_basic_password'});
+    }
+    my $res  = $ua->request( $req );
     my $data = do {
         local $@;
         eval { decode_json( $res->content ) }
@@ -66,7 +71,11 @@ if ( $ARGV[0] and $ARGV[0] eq 'autoconf' ) {
 
 sub get_json_from_url {
     my $uri = shift;
-    my $res = $ua->get( $url . $uri, 'Content-Type' => 'application/json' );
+    my $req = GET $url . $uri, Content_Type => 'application/json';
+    if (exists $ENV{'auth_basic_username'} && exists $ENV{'auth_basic_password'}) {
+        $req->authorization_basic($ENV{'auth_basic_username'}, $ENV{'auth_basic_password'});
+    }
+    my $res  = $ua->request( $req );
     Carp::confess( $res->code . " for " . $uri ) unless $res->is_success;
     my $data = do {
         local $@;
